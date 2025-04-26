@@ -1,8 +1,9 @@
-agora só diz , isto, quando clico no botão login , Bem-vindo, admin! , mas eu quero entrar na aplicação , estás a perceber? o codigo que me destes está incompleto visto que falta o CRUD , eu quero que faças o seguinte , o código que tenho anteriormente tem os crud, este atualmente só tem a tabela utilizadores , eu agora quero fazer a junção dos dois em um unico ficheiro python , eu passo o código do crud, e tu irás , adaptar este codigo com o crud , com o mais recente , está bem? Este codigo tem CRUD: import streamlit as st
+import streamlit as st
 from streamlit_option_menu import option_menu
 import mysql.connector
 import re
 import os
+import bcrypt
 from PIL import Image
 
 # ------------------------------------------------
@@ -38,13 +39,15 @@ def get_db_connection():
         st.error(f"Erro ao conectar à base de dados: {err}")
         return None
 
-# Função para criar a tabela caso não exista
-def cria_tabela():
+# Função para criar as tabelas caso não existam
+def cria_tabelas():
     conn = get_db_connection()
     if conn is None:
         return
     try:
         cursor = conn.cursor()
+        
+        # Tabela de produtos
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS produtos (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,9 +57,34 @@ def cria_tabela():
                 imagem VARCHAR(255)
             )
         ''')
+        
+        # Tabela de utilizadores
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS utilizadores (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                nome VARCHAR(100),
+                email VARCHAR(100),
+                is_admin BOOLEAN DEFAULT FALSE
+            )
+        ''')
+        
+        # Inserir utilizador admin se não existir
+        cursor.execute("SELECT * FROM utilizadores WHERE username = 'admin'")
+        if not cursor.fetchone():
+            # FAZER HASH DA PASSWORD ADMIN COM BCRYPT ANTES DE INSERIR
+                admin_password = '123' # Password inicial do admin
+                hashed_admin_password = bcrypt.hashpw(admin_password.encode('utf-8'), bcrypt.gensalt())
+
+                cursor.execute(
+                    "INSERT INTO utilizadores (username, password_hash, nome, email, is_admin) VALUES (%s, %s, %s, %s, %s)",
+                    ('admin', hashed_admin_password, 'Administrador', 'admin@exemplo.com', True)
+                )   
+        
         conn.commit()
     except mysql.connector.Error as err:
-        st.error(f"Erro na criação da tabela: {err}")
+        st.error(f"Erro na criação das tabelas: {err}")
     finally:
         cursor.close()
         conn.close()
@@ -134,22 +162,112 @@ def lista_produtos():
         conn.close()
 
 # ------------------------------------------------
-# 3. GESTÃO DE LOGIN, WISHLIST E SESSÃO
+# 3. FUNÇÕES DE GESTÃO DE UTILIZADORES
 # ------------------------------------------------
 
-def check_login(username, password):
-    """Exemplo simples de login."""
-    if username == "admin" and password == "123":
-        st.session_state["logged_in"] = True
-        st.session_state["username"] = username
-        st.success("Login efetuado com sucesso!")
-    else:
-        st.error("Credenciais inválidas. Tente novamente.")
+def regista_utilizador(username, password_hash, nome, email, is_admin=False):
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    try:
+        cursor = conn.cursor()
+        # Verificar se o utilizador já existe (mantém-se igual)
+        cursor.execute("SELECT * FROM utilizadores WHERE username = %s", (username,))
+        if cursor.fetchone():
+            st.error("Este nome de utilizador já existe!")
+            return False
+
+        # FAZER HASH DA password_hash COM BCRYPT
+        hashed_password_hash = bcrypt.hashpw(password_hash.encode('utf-8'), bcrypt.gensalt()) 
+        cursor.execute(
+            "INSERT INTO utilizadores (username, password_hash, nome, email, is_admin) VALUES (%s, %s, %s, %s, %s)",
+            (username, hashed_password_hash, nome, email, is_admin) # GUARDAR password_hash HASHED
+        )
+        conn.commit()
+        st.success("Utilizador registado com sucesso!")
+        return True
+    except mysql.connector.Error as err:
+        st.error(f"Erro ao registar utilizador: {err}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+def check_login(username, password_hash):
+    """Verifica as credenciais na base de dados usando bcrypt."""
+    conn = get_db_connection()
+    if conn is None:
+        return False
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM utilizadores WHERE username = %s", (username,)) 
+        user = cursor.fetchone()
+        if user:
+            # VERIFICAR password_hash COM BCRYPT
+            if bcrypt.checkpw(password_hash.encode('utf-8'), user['password_hash'].encode('utf-8')): 
+                st.session_state["logged_in"] = True
+                st.session_state["username"] = username
+                st.session_state["user_id"] = user["id"]
+                st.session_state["is_admin"] = user["is_admin"]
+                st.success(f"Bem-vindo, {username}!")
+                return True
+            else:
+                st.error("password_hash inválida. Tente novamente.") 
+                return False
+        else:
+            st.error("Utilizador não encontrado. Verifique o nome de utilizador.") 
+            return False
+    except mysql.connector.Error as err:
+        st.error(f"Erro ao verificar login: {err}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def logout():
     st.session_state["logged_in"] = False
     st.session_state["username"] = ""
+    st.session_state["user_id"] = None
+    st.session_state["is_admin"] = False
     st.success("Logout efetuado com sucesso!")
+
+def lista_utilizadores():
+    """Lista todos os utilizadores da base de dados."""
+    conn = get_db_connection()
+    if conn is None:
+        return []
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT id, username, nome, email, is_admin FROM utilizadores")
+        utilizadores = cursor.fetchall()
+        return utilizadores
+    except mysql.connector.Error as err:
+        st.error(f"Erro ao listar utilizadores: {err}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
+def eliminar_utilizador(id_utilizador):
+    """Elimina um utilizador da base de dados."""
+    conn = get_db_connection()
+    if conn is None:
+        return
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM utilizadores WHERE id = %s", (id_utilizador,))
+        conn.commit()
+        st.success("Utilizador eliminado com sucesso!")
+    except mysql.connector.Error as err:
+        st.error(f"Erro ao eliminar utilizador: {err}")
+    finally:
+        cursor.close()
+        conn.close()
+
+# ------------------------------------------------
+# 4. GESTÃO DE WISHLIST E SESSÃO
+# ------------------------------------------------
 
 def init_session_state():
     """Inicializa variáveis de sessão."""
@@ -157,10 +275,18 @@ def init_session_state():
         st.session_state["logged_in"] = False
     if "username" not in st.session_state:
         st.session_state["username"] = ""
+    if "user_id" not in st.session_state:
+        st.session_state["user_id"] = None
+    if "is_admin" not in st.session_state:
+        st.session_state["is_admin"] = False
     if "wishlist" not in st.session_state:
-        st.session_state["wishlist"] = []
+        st.session_state["wishlist"] = [] 
     if "search" not in st.session_state:
         st.session_state["search"] = ""
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "Home"
+    if "wishlist_clicked" not in st.session_state:
+        st.session_state["wishlist_clicked"] = False
 
 def adicionar_wishlist(id_produto):
     """Adiciona um produto à wishlist, se ainda não existir."""
@@ -175,13 +301,30 @@ def sanitize_filename(filename):
     return re.sub(r'[^\w\.-]', '_', filename)
 
 # ------------------------------------------------
-# 4. PÁGINAS DA APLICAÇÃO
+# 5. PÁGINAS DA APLICAÇÃO
 # ------------------------------------------------
 
 def home_page():
     st.subheader("Bem-vindo à Loja de Moda!")
     st.write("Esta é uma plataforma para gerir os produtos da loja.")
     st.write("Use o menu lateral para navegar nas diferentes secções.")
+    
+    # Destaque para alguns produtos na página inicial
+    st.subheader("Produtos em Destaque")
+    produtos = lista_produtos()
+    if produtos:
+        # Mostrar apenas até 3 produtos em destaque
+        produtos_destaque = produtos[:min(3, len(produtos))]
+        cols = st.columns(len(produtos_destaque))
+        for i, produto in enumerate(produtos_destaque):
+            with cols[i]:
+                st.image(produto['imagem'] if produto['imagem'] and os.path.exists(produto['imagem'])
+                         else NO_IMAGE_PATH,
+                         use_container_width=True)
+                st.write(f"**{produto['nome']}**")
+                st.write(f"Preço: €{produto['preco']:.2f}")
+    else:
+        st.info("Não há produtos disponíveis para mostrar.")
 
 def produtos_page():
     st.subheader("Produtos Disponíveis")
@@ -325,19 +468,116 @@ def wishlist_page():
         st.info("A Wishlist está vazia.")
 
 def login_page():
-    st.subheader("Login")
+    st.subheader("Área de Utilizador")
+    
     if st.session_state["logged_in"]:
-        st.write(f"Já estás autenticado como: {st.session_state['username']}")
-        if st.button("Logout"):
-            logout()
+        st.write(f"Utilizador autenticado: **{st.session_state['username']}**")
+        
+        if st.session_state["is_admin"]:
+            st.success("Acesso de Administrador")
+            
+            # Tabs para diferentes funções de administrador
+            tab1, tab2 = st.tabs(["Perfil", "Gestão de Utilizadores"])
+            
+            with tab1:
+                st.subheader("Informações do Perfil")
+                st.write("Aqui poderás alterar as tuas informações pessoais (funcionalidade em desenvolvimento)")
+                
+                if st.button("Logout", key="btn_logout_admin"):
+                    logout()
+                    st.rerun()
+            
+            with tab2:
+                st.subheader("Gerir Utilizadores")
+                utilizadores = lista_utilizadores()
+                if utilizadores:
+                    st.write(f"Total de utilizadores: {len(utilizadores)}")
+                    
+                    # Listagem de utilizadores em tabela
+                    user_data = []
+                    for u in utilizadores:
+                        user_data.append({
+                            "ID": u['id'],
+                            "Username": u['username'],
+                            "Nome": u['nome'] if u['nome'] else "-",
+                            "Email": u['email'] if u['email'] else "-",
+                            "Tipo": "Admin" if u['is_admin'] else "Regular"
+                        })
+                    
+                    st.table(user_data)
+                    
+                    # Formulário para eliminar utilizador
+                    st.write("---")
+                    st.subheader("Eliminar Utilizador")
+                    user_to_delete = st.selectbox(
+                        "Selecione o utilizador a eliminar:",
+                        [f"{u['id']} - {u['username']}" for u in utilizadores]
+                    )
+                    
+                    if user_to_delete:
+                        user_id = int(user_to_delete.split(" - ")[0])
+                        selected_user = next(u for u in utilizadores if u['id'] == user_id)
+                        
+                        # Evitar eliminar o próprio administrador
+                        if selected_user['username'] == st.session_state["username"]:
+                            st.error("Não podes eliminar o teu próprio utilizador!")
+                        else:
+                            confirm = st.checkbox(f"Confirmar eliminação de {selected_user['username']}?")
+                            if confirm and st.button("Eliminar Utilizador"):
+                                eliminar_utilizador(user_id)
+                            st.rerun()
+                else:
+                    st.info("Não existem utilizadores registados.")
+        else:
+            # Utilizador regular
+            st.write("Acesso de Utilizador Regular")
+            st.write("Aqui poderás gerir as tuas informações pessoais e wishlist")
+            
+            if st.button("Logout", key="btn_logout_regular"):
+                logout()
+                st.rerun()
     else:
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        if st.button("Iniciar Sessão"):
-            check_login(username, password)
+        # Tabs para login e registro
+        tab1, tab2 = st.tabs(["Login", "Registro"])
+        
+        with tab1:
+            with st.form("login_form"):
+                username = st.text_input("Nome de Utilizador")
+                password_hash = st.text_input("Password", type="password")
+                submit = st.form_submit_button("Iniciar Sessão")
+                
+                if submit:
+                    if username and password_hash:
+                        if check_login(username, password_hash):
+                            st.rerun()
+                    else:
+                        st.error("Por favor, preencha todos os campos.")
+        
+        with tab2:
+            with st.form("registro_form"):
+                new_username = st.text_input("Nome de Utilizador")
+                new_password_hash = st.text_input("Password", type="password")
+                confirm_password_hash = st.text_input("Confirmar Password", type="password")
+                nome = st.text_input("Nome Completo")
+                email = st.text_input("Email")
+                submit_registro = st.form_submit_button("Registar")
+                
+                if submit_registro:
+                    if new_username and new_password_hash and confirm_password_hash and nome and email:
+                        if new_password_hash != confirm_password_hash:
+                            st.error("As password_hashs não coincidem!")
+                        elif len(new_password_hash) < 3:
+                            st.error("A password_hash deve ter pelo menos 3 caracteres.")
+                        elif not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                            st.error("Email inválido.")
+                        else:
+                            if regista_utilizador(new_username, new_password_hash, nome, email):
+                                st.info("Registo concluído! Faz login para continuar.")
+                    else:
+                        st.error("Por favor, preencha todos os campos.")
 
 # ------------------------------------------------
-# 5. SEÇÕES EXTRA (PLACEHOLDERS)
+# 6. SEÇÕES EXTRA (PLACEHOLDERS)
 # ------------------------------------------------
 
 def descontos_page():
@@ -361,12 +601,12 @@ def entregas_page():
     st.write("Exemplo de página de entregas. (Em desenvolvimento)")
 
 # ------------------------------------------------
-# 6. MAIN (EXECUÇÃO PRINCIPAL DO STREAMLIT)
+# 7. MAIN (EXECUÇÃO PRINCIPAL DO STREAMLIT)
 # ------------------------------------------------
 
 def main():
     # Criar base de dados e tabela, se não existirem
-    cria_tabela()
+    cria_tabelas()
     # Inicializar variáveis de sessão
     init_session_state()
     
@@ -393,6 +633,21 @@ def main():
     .css-1cpxqw2 {
         background-color: #f8f9fa;
     }
+    /* Status de utilizador */
+    .user-status {
+        padding: 5px;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .logged-in {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .logged-out {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -410,324 +665,53 @@ def main():
         """)
     with col3:
         if st.button("Wishlist"):
-            st.session_state["page"] = "Wishlist"
+            st.session_state["current_page"] = "Wishlist"
+            st.rerun()
+             
+    # Mostrar status do utilizador
+    if st.session_state["logged_in"]:
+        st.sidebar.markdown(f'<div class="user-status logged-in">Olá, {st.session_state["username"]}!</div>', unsafe_allow_html=True)
+    else:
+        st.sidebar.markdown('<div class="user-status logged-out">Não autenticado</div>', unsafe_allow_html=True)
     
-    # Menu lateral usando streamlit-option_menu
+        menu_options = ["Home", "Produtos", "Conta"]
+        menu_icons = ["house", "cart", "person"]
+
+    if st.session_state["logged_in"]:
+        menu_options = ["Home", "Produtos", "Wishlist", "Conta"]
+        menu_icons = ["house", "cart", "heart", "person"]
+
+    if st.session_state["is_admin"]:
+        menu_options = ["Home", "Produtos", "Adicionar", "Editar", "Eliminar", "Wishlist", "Conta"]
+        menu_icons = ["house", "cart", "plus", "pencil", "trash", "heart", "person"]
+
+    default_index = menu_options.index(st.session_state["current_page"]) if st.session_state["current_page"] in menu_options else 0
     with st.sidebar:
         escolha = option_menu(
             "Menu",
-            ["Home", "Produtos", "Adicionar", "Editar", "Eliminar", "Wishlist", "Login/Logout"],
-            icons=["house", "cart", "plus", "pencil", "trash", "heart", "person"],
+            menu_options,
+            icons=menu_icons,
             menu_icon="list",
-            default_index=0
-        )
+            default_index=menu_options.index(st.session_state["current_page"])
+        )        
+        if not st.session_state["wishlist_clicked"] or escolha != "Wishlist":
+            st.session_state["current_page"] = escolha
     
     # Lógica de navegação
-    if escolha == "Home":
+    if st.session_state["current_page"] == "Home":
         home_page()
-    elif escolha == "Produtos":
+    elif st.session_state["current_page"] == "Produtos":
         produtos_page()
-    elif escolha == "Adicionar":
-        if st.session_state["logged_in"]:
-            adicionar_page()
-        else:
-            st.warning("Precisas de estar autenticado para adicionar produtos.")
-    elif escolha == "Editar":
-        if st.session_state["logged_in"]:
-            editar_page()
-        else:
-            st.warning("Precisas de estar autenticado para editar produtos.")
-    elif escolha == "Eliminar":
-        if st.session_state["logged_in"]:
-            eliminar_page()
-        else:
-            st.warning("Precisas de estar autenticado para eliminar produtos.")
-    elif escolha == "Wishlist":
+    elif st.session_state["current_page"] == "Adicionar":
+        adicionar_page()
+    elif st.session_state["current_page"] == "Editar":
+        editar_page()
+    elif st.session_state["current_page"] == "Eliminar":
+        eliminar_page()
+    elif st.session_state["current_page"] == "Wishlist":
         wishlist_page()
-    elif escolha == "Login/Logout":
+    elif st.session_state["current_page"] == "Conta":
         login_page()
 
 if __name__ == "__main__":
     main()
-
-
-CRUD SEM LOGIN E SEM LOG OUT
-
-------------------------------------------------
-
-
-
-import streamlit as st
-from streamlit_option_menu import option_menu
-import mysql.connector
-import os
-from PIL import Image, UnidentifiedImageError
-import bcrypt
-from io import BytesIO
-
-# ------------------------------------------------
-# 1. CONFIGURAÇÃO INICIAL E CRIAÇÃO DE TABELAS
-# ------------------------------------------------
-
-NO_IMAGE_PATH = 'noimage.jpg'
-MAX_IMAGE_SIZE_MB = 5  # Tamanho máximo de 5MB para imagens
-
-# Criar diretórios necessários
-os.makedirs("images", exist_ok=True)
-
-# Configuração da ligação ao MySQL
-db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',
-    'database': 'loja_modas'
-}
-
-def get_db_connection():
-    try:
-        conn = mysql.connector.connect(**db_config)
-        return conn
-    except mysql.connector.Error as err:
-        st.error(f"Erro ao conectar à base de dados: {err}")
-        return None
-
-def cria_base_de_dados():
-    conn = mysql.connector.connect(
-        host=db_config['host'],
-        user=db_config['user'],
-        password=db_config['password']
-    )
-    cursor = conn.cursor()
-    
-    # Cria o base de dados se não existir
-    cursor.execute("CREATE DATABASE IF NOT EXISTS loja_modas")
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-def criar_admin_se_nao_existir():
-    # Verifica se o administrador já existe
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM utilizadores WHERE is_admin = TRUE")
-    admin = cursor.fetchone()
-
-    # Se não existir administrador, cria um
-    if admin is None:
-        sucesso = criar_utilizador('admin', 'adminpassword', True)  # Senha do admin
-        if sucesso:
-            st.session_state['admin_criado'] = True  # Marca que o admin foi criado
-    cursor.close()
-    conn.close()
-
-def cria_tabelas():
-    # Criação do base de dados, se necessário
-    cria_base_de_dados()
-
-    conn = get_db_connection()
-    if conn is None:
-        return
-    
-    try:
-        cursor = conn.cursor()
-        
-        # Tabela de utilizadores
-        cursor.execute('''CREATE TABLE IF NOT EXISTS utilizadores (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) UNIQUE NOT NULL,
-                password_hash VARCHAR(255) NOT NULL,
-                is_admin BOOLEAN DEFAULT FALSE
-            )''')
-        
-        # Tabela de produtos
-        cursor.execute('''CREATE TABLE IF NOT EXISTS produtos (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                nome VARCHAR(255) NOT NULL,
-                descricao TEXT,
-                preco DECIMAL(10,2) NOT NULL,
-                categoria VARCHAR(100),
-                imagem VARCHAR(255),
-                stock INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )''')
-        
-        conn.commit()
-    except mysql.connector.Error as err:
-        st.error(f"Erro na criação das tabelas: {err}")
-    finally:
-        cursor.close()
-        conn.close()
-
-# ------------------------------------------------
-# 2. SEGURANÇA E AUTENTICAÇÃO
-# ------------------------------------------------
-
-def verificar_login(username, password):
-    """Função para verificar as credenciais de login do utilizador."""
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM utilizadores WHERE username = %s", (username,))
-        utilizador = cursor.fetchone()
-        
-        if utilizador and bcrypt.checkpw(password.encode('utf-8'), utilizador['password_hash'].encode('utf-8')):
-            # Se o login for bem-sucedido, armazena o estado da sessão
-            st.session_state.update({
-                "logged_in": True,
-                "user_id": utilizador['id'],
-                "username": utilizador['username'],
-                "is_admin": utilizador['is_admin']  # Armazena o status de admin diretamente na sessão
-            })
-            return True
-        return False
-    except mysql.connector.Error as err:
-        st.error(f"Erro ao verificar login: {err}")
-        return False
-    finally:
-        cursor.close()
-        conn.close()
-
-def pagina_login():
-    """Página de login para o utilizador inserir as credenciais."""
-    with st.form("login_form"):
-        # Recebe o nome de utilizador e a senha do formulário
-        username = st.text_input("Nome do Utilizador")
-        password = st.text_input("Senha", type="password")
-        
-        # Botão para enviar e validar as credenciais
-        if st.form_submit_button("Login"):
-            if verificar_login(username, password):
-                st.success(f"Bem-vindo, {username}!")
-                # Redefine a página para o "Home" após o login bem-sucedido
-                st.session_state.pagina = 'home'  
-            else:
-                st.error("Credenciais inválidas")
-
-# ------------------------------------------------
-# 5. REGISTO DO UTILIZADOR
-# ------------------------------------------------
-
-def criar_utilizador(username, password, is_admin=False):
-    # Verifica se o nome de utilizador já existe na base de dados
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM utilizadores WHERE username = %s", (username,))
-        existing_user = cursor.fetchone()
-        
-        if existing_user:
-            st.error(f"O Utilizador {username} já existe!")
-            return False  # Se já existe, não cria o utilizador
-        
-        # Se não existir, cria o utilizador
-        salt = bcrypt.gensalt()
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
-        
-        cursor.execute(
-            "INSERT INTO utilizadores (username, password_hash, is_admin) VALUES (%s, %s, %s)",
-            (username, password_hash.decode('utf-8'), is_admin)
-        )
-        conn.commit()
-        st.success(f"O Utilizador {username} foi criado com sucesso!")
-        return True
-    except mysql.connector.Error as err:
-        st.error(f"Erro ao criar o utilizador: {err}")
-        return False
-    finally:
-        cursor.close()
-        conn.close()
-
-def dashboard_admin():
-    st.header("Dashboard do Administrador")
-    st.subheader("Adicionar Novo Produto")
-
-    with st.form("add_product_form"):
-        nome = st.text_input("Nome do Produto")
-        descricao = st.text_area("Descrição")
-        preco = st.number_input("Preço", min_value=0.0, format="%.2f")
-        categoria = st.text_input("Categoria")
-        stock = st.number_input("Quantidade em stock", min_value=0, step=1)
-        imagem = st.file_uploader("Imagem do Produto", type=["jpg", "jpeg", "png"])
-
-        if st.form_submit_button("Adicionar Produto"):
-            if imagem is not None:
-                # Salva a imagem na pasta "images"
-                img_path = os.path.join("images", imagem.name)
-                with open(img_path, "wb") as f:
-                    f.write(imagem.getbuffer())
-
-                st.success("Produto adicionado com sucesso.")
-            else:
-                st.error("A Imagem é obrigatória.")
-
-    st.subheader("Produtos Registados")
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM produtos")
-    produtos = cursor.fetchall()
-    conn.close()
-
-    for produto in produtos:
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col1:
-            st.image(produto['imagem'] if os.path.exists(produto['imagem']) else NO_IMAGE_PATH, width=100)
-        with col2:
-            st.markdown(f"**{produto['nome']}**")
-            st.write(f"Preço: €{produto['preco']:.2f}")
-            st.write(f"Categoria: {produto['categoria']}")
-            st.write(f"Stock: {produto['stock']}")
-        with col3:
-            if st.button(f"Editar {produto['nome']}", key=f"edit_{produto['id']}"):
-                st.write("Editar produto")
-            if st.button(f"Apagar {produto['nome']}", key=f"delete_{produto['id']}"):
-                st.write("Apagar produto")
-
-def main():
-    cria_tabelas()
-
-    # Garantir que o admin seja criado uma única vez
-    if 'admin_criado' not in st.session_state:
-        criar_admin_se_nao_existir()  # Criação do admin
-        # Não mostra mais mensagens de criação de admin
-        st.session_state['admin_criado'] = True  # Marca que o admin foi criado
-    
-    if 'pagina' not in st.session_state:
-        st.session_state.pagina = 'login'
-
-    # Navegação principal
-    if not st.session_state.get('logged_in'):
-        pagina_login()
-        return
-
-    # Menu principal após login
-    with st.sidebar:
-        escolha = option_menu(
-            "Menu Principal",
-            ["Home", "Produtos", "Wishlist", "Perfil"],
-            icons=["house", "cart", "heart", "person"],
-            menu_icon="list"
-        )
-        
-        if st.button("Logout"):
-            # Limpar estado da sessão e voltar à página de login
-            st.session_state.clear()  # Limpa o estado da sessão
-            st.session_state.pagina = 'login'  # Redireciona para a página de login
-            return  # Sai da execução do main
-
-    # Navegação para o Dashboard se o usuário for admin
-    if st.session_state.get("is_admin") and escolha == "Produtos":
-        st.session_state.pagina = "dashboard"  # Definindo qual página será exibida
-        dashboard_admin()
-    elif st.session_state.pagina == 'home':
-        # Exibir a página inicial (exemplo)
-        st.header("Bem-vindo à Loja de Modas")
-        # A lógica para exibir os produtos seria aqui
-    elif st.session_state.pagina == 'login':
-        pagina_login()
-
-if __name__ == "__main__":
-    main()  # Chama a função principal se o script for executado diretamente
-
-
-TABELA UTILIZADORES SEM CRUD

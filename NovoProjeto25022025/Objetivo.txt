@@ -1,0 +1,122 @@
+Objetivo:  Sessão 10 - Tarefa: Planeamento de app que atualize a informação de um site de venda de vestuário e acessórios de moda. Criação de algoritmo e esboço, que inclua os dados relativos a cada novo produto, incluindo nome, fotografia, descrição, preço unitário e outras informações que considerem relevantes.
+
+Receita/Esboço:
+localhost
+Ligação a bd
+criar base de dados no mysql
+Tabela de Produtos (
+Nome do Produto,
+Fotografia,
+Descricao,
+Preço Unitário, 
+Categoria, 
+Marca,
+Tamanho, 
+Cor, 
+Stock)
+
+App Python
+	(Ligação à BD)
+	Tabela Criada
+	Validação de dados
+	Categoria do Vestuario
+	Descricao do Vestuario
+	Se é uma peça de roupa ou acessório
+	(Inserir Produtos (Peça de vestuário ou acessórios de moda)
+	(Apague Produtos)
+	(Modificar/Alterar Produtos)
+	(Consultar Produtos)
+	
+
+
+
+
+
+
+Pseucódigo
+INÍCIO
+   // 1. Estabelecer conexão com o MySQL (localhost)
+   CONEXÃO <- conectarBD(host="localhost", usuário, senha, "loja_vestuário")
+   SE conexão falhar ENTÃO
+       EXIBIR "Erro na ligação com a base de dados"
+       ENCERRAR
+   FIM SE
+
+   // 2. Verificar/Criação da Tabela de Produtos
+   EXECUTAR comando SQL para criar a tabela "Produtos" (se não existir)
+
+   // 3. Receber dados do novo produto na App
+   produto <- {
+       nome: input("Insira o nome do produto: "),
+       fotografia: input("Insira o caminho da imagem: "),
+       descricao: input("Insira a descrição do produto: "),
+       preco_unitario: input("Insira o preço unitário: "),
+       categoria: input("Insira a categoria (Vestuário/Acessório): "),
+       marca: input("Insere a marca: "),
+       tamanho: input("Insira o tamanho (se aplicável): "),
+       cor: input("Insira a cor: "),
+       stock: input("Insira a quantidade em stock: ")
+   }
+
+   // 4. Validar Dados do Produto
+   SE (produto.nome, produto.descricao, produto.preco_unitario e produto.categoria) ESTIVEREM VAZIOS OU inválidos 
+	ENTÃO
+       EXIBIR "Dados inválidos. Verifique os campos obrigatórios."
+       ENCERRAR OU RETORNAR ao menu
+   FIM SE
+
+   // 5. Inserir/Atualizar Produto no BD
+   SE produto for novo ENTÃO
+       EXECUTAR SQL "INSERT INTO Produtos (...) VALUES (...)" COM OS DADOS DE produto
+   SENÃO SE produto existir ENTÃO
+       EXECUTAR SQL "UPDATE Produtos SET ... WHERE id=?" COM OS DADOS DE produto
+   FIM SE
+
+   // 6. Consultar/Apagar/Modificar Produtos
+   APRESENTAR menu de opções para:
+       a) Inserir novo produto
+       b) Apagar produto existente
+       c) Modificar/Alterar produto
+       d) Consultar produtos inseridos na base de dados
+
+   // 7. Mensagens de erro
+   EXIBIR mensagem de sucesso ou erro conforme resultado da operação
+
+   // 8. Fechar conexão com o BD
+   FECHAR conexão
+FIM
+
+
+
+Fluxo do Algoritmo (Esboço)
+
+Início
+Iniciar a aplicação e estabelecer a ligação ao banco de dados (MySQL em localhost).
+
+
+Recepção dos Dados do Produto
+Receber os dados via formulário
+Nome, Fotografia, Descrição, Preço Unitário, Categoria e demais informações.
+
+Validação dos Dados
+Campos obrigatórios: Verificar se nome, descricao, preco_unitario e categoria foram preenchidos.
+
+
+Verificações:
+Verificar se o preço é um valor positivo.
+Validar o formato da fotografia (URL válida/Blob).
+Verificar a consistência dos demais campos (exemplo: o stock não pode ser negativo).
+
+
+Inserção ou Atualização do Produto
+Se for um novo produto, executar a inserção na tabela Produtos.
+Se for uma atualização, identificar o produto (ex.: por ID) e atualizar os campos necessários.
+
+
+Feedback e Atualização do Site
+Após a operação, enviar uma mensagem de sucesso ou erro.
+Atualizar a exibição dos produtos no site com as informações adicionadas ou modificadas.
+
+
+Encerramento
+Fechar a ligação com o banco de dados e finalizar o processo.

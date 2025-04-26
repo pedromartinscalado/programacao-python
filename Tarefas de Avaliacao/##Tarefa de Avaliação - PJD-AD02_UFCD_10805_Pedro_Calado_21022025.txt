@@ -1,0 +1,511 @@
+##Tarefa de Avaliação - PJD-AD02_UFCD_10805_Pedro_Calado_21022025
+##UFCD 10805: - Pedro Calado
+##Programação em Python Primeira parte:
+##Aplicação de conceitos fundamentais de programação
+##Instruções: Resolva os desafios a seguir.
+##Leia com atenção e execute as validações necessárias.
+
+
+#Parte 1: Fundamentos e Validação de Dados
+# 1 - Validação de Números Inteiros
+##"""
+##Crie um programa que solicite ao utilizador dois números inteiros,
+##some, subtraia, e multiplique esses dois números
+##e os apresente utilizando a instrução print().
+##Valide se o input é um número inteiro permitindo
+##novas tentativas caso não seja.
+##"""
+
+
+
+
+## Resolução - 1 - Validação de Números Inteiros
+##def pede_inteiro(mensagem):
+##    while True:
+##        entrada = input(mensagem)
+##        try:
+##            num = int(entrada)
+##            return num
+##        except ValueError:
+##            print("Erro: Por favor, insira um número inteiro válido.")
+##
+### Solicita dois números inteiros ao utilizador
+##num1 = pede_inteiro("Insira o primeiro número inteiro: ")
+##num2 = pede_inteiro("Insira o segundo número inteiro: ")
+##
+### Realiza as operações
+##soma = num1 + num2
+##subtracao = num1 - num2
+##multiplicacao = num1 * num2
+##
+### Apresenta os resultados
+##print("A soma é:", soma)
+##print("A subtração é:", subtracao)
+##print("A multiplicação é:", multiplicacao)
+
+
+
+# 2 - Validação de Texto
+##"""
+##Desenvolva um programa que peça ao utilizador para inserir uma palavra.
+##Verifique se a palavra contém apenas letras.
+##Caso contrário, exiba uma mensagem de erro e permita novas tentativas.
+##"""
+
+
+
+
+#### Resolução - 2 - Validação de Texto
+##def pedir_palavra(mensagem):
+##    while True:
+##        palavra = input(mensagem).strip()
+##        if palavra.isalpha():
+##            return palavra
+##        else:
+##            print("Erro: A palavra deve conter apenas letras. Tente novamente.")
+##
+### Solicitar a palavra ao utilizador
+##palavra_valida = pedir_palavra("Insira uma palavra: ")
+##print("A palavra inserida foi:", palavra_valida)
+
+
+
+
+
+# 3 - Números Pares ou Ímpares
+##"""
+##Solicite ao utilizador um número inteiro mais pequeno entre 1 e 20.
+##Solicite um outro número maior no mesmo intervalo.
+##o
+##Verifique se o número está no intervalo e indique se é par ou ímpar.
+##o
+##Verifique se o primeiro número é mais pequeno do que o segundo.
+##o
+##Apresente num ciclo for a sequência dos números em função do valor
+##introduzido pelo utilizador.
+##o
+##Exiba mensagens de erro para entradas inválidas
+##e permita que o utilizador faça a correção aos dados introduzidos.
+##"""
+
+
+
+
+
+
+## Resolução - 3 - Números Pares ou Ímpares
+##def pede_inteiro_intervalo(mensagem, minimo, maximo):
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            if minimo <= numero <= maximo:
+##                return numero
+##            else:
+##                print(f"Erro: O número deve estar entre {minimo} e {maximo}.")
+##        except ValueError:
+##            print("Erro: Por favor, insira um número inteiro válido.")
+##
+### Solicitar os números e validar a relação entre eles
+##while True:
+##    num1 = pede_inteiro_intervalo("Insira o primeiro número inteiro (entre 1 e 20): ", 1, 20)
+##    num2 = pede_inteiro_intervalo("Insira o segundo número inteiro (entre 1 e 20): ", 1, 20)
+##    
+##    if num1 >= num2:
+##        print("Erro: O primeiro número deve ser menor do que o segundo. Tente novamente.")
+##    else:
+##        break
+##
+### Verificar se os números são pares ou ímpares
+##if num1 % 2 == 0:
+##    print(f"O primeiro número {num1} é par.")
+##else:
+##    print(f"O primeiro número {num1} é ímpar.")
+##
+##if num2 % 2 == 0:
+##    print(f"O segundo número {num2} é par.")
+##else:
+##    print(f"O segundo número {num2} é ímpar.")
+##
+### Apresentar a sequência de números num ciclo for
+##print(f"Sequência de números entre {num1} e {num2}:")
+##for i in range(num1, num2 + 1):
+##    print(i)
+
+
+
+
+
+# 4 - Cálculo de Quadrado
+##"""
+##Crie um programa que calcule o quadrado de um número inserido pelo utilizador.
+##Utilize validação para garantir a entrada correta.
+##"""
+
+
+
+
+
+## Resolução - 4 - Cálculo de Quadrado
+##def pede_inteiro(mensagem):
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            return numero
+##        except ValueError:
+##            print("Erro: Por favor, insira um número inteiro válido.")
+##
+##num = pede_inteiro("Insira um número inteiro: ")
+##quadrado = num ** 2
+##
+##print(f"O quadrado de {num} é {quadrado}.")
+
+
+
+##########################################################################################
+
+
+#Parte 2: Cálculos com Repetição
+# 5 - Operações Matemáticas
+##"""
+##Peça dois números ao utilizador
+##e calcule: Soma, subtração, multiplicação, divisão e média.
+##Garanta que o segundo número não seja zero para a divisão.
+##"""
+
+
+
+#### Resolução Parte 2 - 5 - Operações Matemáticas
+##def pede_numero(mensagem):
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            return numero
+##        except ValueError:
+##            print("Erro: Por favor, insira um número válido.")
+##
+### Solicitar o primeiro número
+##num1 = pede_numero("Insira o primeiro número: ")
+##
+### Solicitar o segundo número, garantindo que não seja zero para divisão
+##num2 = pede_numero("Insira o segundo número (não pode ser zero para divisão): ")
+##while num2 == 0:
+##    print("Erro: o segundo número não pode ser zero para a divisão.")
+##    num2 = pede_numero("Insira novamente o segundo número (diferente de zero): ")
+##
+### Calcular as operações
+##soma = num1 + num2
+##subtracao = num1 - num2
+##multiplicacao = num1 * num2
+##divisao = num1 / num2
+##media = soma / 2
+##
+### Apresentar os resultados
+##print(f"A soma é: {soma}")
+##print(f"A subtração é: {subtracao}")
+##print(f"A multiplicação é: {multiplicacao}")
+##print(f"A divisão é: {divisao}")
+##print(f"A média é: {media}")
+
+
+
+#Parte 2: Cálculos com Repetição
+# 6 - Repetição de Cálculos
+##"""
+##Modifique o programa anterior para permitir que
+##o utilizador repita os cálculos com novos números ou encerre o programa.
+##"""
+
+
+
+
+
+## Resolução Parte 2 - 6 - Repetição de Cálculos
+##def pede_numero(mensagem):
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            return numero
+##        except ValueError:
+##            print("Erro: Por favor, insira um número inteiro válido.")
+##
+##while True:
+##    # Solicitar o primeiro número
+##    num1 = pede_numero("Insira o primeiro número: ")
+##
+##    # Solicitar o segundo número, garantindo que não seja zero para divisão
+##    num2 = pede_numero("Insira o segundo número (não pode ser zero para divisão): ")
+##    while num2 == 0:
+##        print("Erro: o segundo número não pode ser zero para a divisão.")
+##        num2 = pede_numero("Insira novamente o segundo número (diferente de zero): ")
+##
+##    # Calcular as operações
+##    soma = num1 + num2
+##    subtracao = num1 - num2
+##    multiplicacao = num1 * num2
+##    divisao = num1 / num2
+##    media = soma / 2
+##
+##    # Apresentar os resultados
+##    print(f"\nResultados:")
+##    print(f"A soma é: {soma}")
+##    print(f"A subtração é: {subtracao}")
+##    print(f"A multiplicação é: {multiplicacao}")
+##    print(f"A divisão é: {divisao}")
+##    print(f"A média é: {media}")
+##
+##    # Perguntar se o utilizador deseja continuar ou sair
+##    repetir = input("\nDeseja fazer novos cálculos? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        print("Programa encerrado.")
+##        break
+
+
+
+
+
+#Parte 2: Cálculos com Repetição
+# 7 - Validação de Intervalo de Valores
+##"""
+##Solicite ao utilizador que insira um número entre 10 e 50.
+##Garanta que o valor esteja dentro do intervalo.
+##Exiba os números de 10 até o valor inserido, um por linha.
+##Permita que o utilizador possa voltar a escolher um número e repetir o programa.
+##"""
+
+
+
+
+## Resolução Parte 2 - 7 - Validação de Intervalo de Valores
+##def pede_numero_intervalo(mensagem, minimo, maximo):
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            if minimo <= numero <= maximo:
+##                return numero
+##            else:
+##                print(f"Erro: O número deve estar entre {minimo} e {maximo}.")
+##        except ValueError:
+##            print("Erro: Por favor, insira um número inteiro válido.")
+##
+##while True:
+##    # Pede um número dentro do intervalo 10 a 50
+##    numero = pede_numero_intervalo("Insira um número entre 10 e 50: ", 10, 50)
+##
+##    # Apresenta os números de 10 até ao número escolhido
+##    print(f"\nNúmeros de 10 até {numero}:")
+##    for i in range(10, numero + 1):
+##        print(i)
+##
+##    # Pergunta se deseja repetir o programa
+##    repetir = input("\nDeseja escolher outro número? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        print("Programa encerrado.")
+##        break
+
+
+
+
+##########################################################################################
+
+
+
+#Parte 3: Validação de dados e repetição
+# 8 - Registo e Consulta de Produtos
+##"""
+##Crie um programa que permita ao utilizador registar produtos com nome,
+##quantidade e preço, garantindo que o nome do produto
+##não pode estar vazio, a quantidade tem de ser
+##um número inteiro maior do que zero, O preço tem de ser um valor numérico positivo.
+##Após o registo, o utilizador pode consultar o preço de um produto pelo nome.
+##O programa deve permitir repetir a consulta ou terminá-la.
+##"""
+
+
+
+
+
+
+# Resolução Parte 3 - 8 - Registo e Consulta de Produtos
+##import re  # Módulo para expressões regulares
+##
+##def validar_nome():
+##    """Solicita um nome de produto e garante que não está vazio e que contém apenas letras e espaços."""
+##    while True:
+##        nome = input("Insira o nome do produto: ").strip()
+##        if not nome:
+##            print("Erro: O nome do produto não pode estar vazio.")
+##        elif not re.match(r'^[A-Za-zÀ-ú\s]+$', nome):
+##            print("Erro: O nome do produto deve conter apenas letras e espaços, sem números ou símbolos.")
+##        else:
+##            return nome
+##
+##def validar_quantidade():
+##    """Solicita uma quantidade e garante que é um número inteiro positivo."""
+##    while True:
+##        try:
+##            quantidade = int(input("Insira a quantidade do produto: "))
+##            if quantidade > 0:
+##                return quantidade
+##            print("Erro: A quantidade tem de ser um número inteiro maior que zero.")
+##        except ValueError:
+##            print("Erro: Insira um número inteiro válido.")
+##
+##def validar_preco():
+##    """Solicita um preço e garante que é um número positivo."""
+##    while True:
+##        try:
+##            preco = float(input("Insira o preço do produto: "))
+##            if preco > 0:
+##                return preco
+##            print("Erro: O preço tem de ser um valor positivo.")
+##        except ValueError:
+##            print("Erro: Insira um valor numérico válido.")
+##
+### Dicionário para armazenar os produtos
+##produtos = {}
+##
+### Registo do produtos
+##while True:
+##    print("\n*** Registo do Produto ***")
+##    nome = validar_nome()
+##    quantidade = validar_quantidade()
+##    preco = validar_preco()
+##
+##    # Guardar no dicionário
+##    produtos[nome] = {"quantidade": quantidade, "preco": preco}
+##    print(f" Produto '{nome}' registado com sucesso!")
+##
+##    repetir = input("Deseja registar outro produto? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        break
+##
+### Consulta de produtos
+##while True:
+##    print("\n*** Consulta de Produtos ***")
+##    nome_pesquisa = input("Insira o nome do produto para consultar o preço: ").strip()
+##
+##    if nome_pesquisa in produtos:
+##        print(f"O preço do produto '{nome_pesquisa}' é {produtos[nome_pesquisa]['preco']}€")
+##    else:
+##        print(f"Erro: O produto '{nome_pesquisa}' não está registado.")
+##
+##    repetir = input("Deseja consultar outro produto? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        print("Programa encerrado.")
+##        break
+
+
+
+
+
+
+#Parte 3: Validação de dados e repetição
+# 9 - Divisão com Validação e Repetição
+##"""
+##Desenvolva um programa que solicite
+##dois números ao utilizador
+##e realize a divisão entre eles,
+##garantindo que: O utilizador introduza apenas valores numéricos;
+##Não seja possível dividir por zero;
+##Após uma operação bem-sucedida ou erro,
+##o programa pergunte se o utilizador deseja repetir a operação ou terminar.
+##"""
+
+
+
+# Resolução Parte 3 - 9 - Divisão com Validação e Repetição
+##def pedir_numero(mensagem):
+##    """Solicita um número inteiro ao utilizador e garante que a entrada é válida."""
+##    while True:
+##        try:
+##            numero = int(input(mensagem))
+##            return numero
+##        except ValueError:
+##            print("Erro: Insira um número inteiro válido.")
+##
+##while True:
+##    print("\n*** Divisão com Validação ***")
+##
+##    # Pedir o primeiro número
+##    num1 = pedir_numero("Insira o primeiro número inteiro: ")
+##
+##    # Pedir o segundo número, garantindo que não seja zero
+##    num2 = pedir_numero("Insira o segundo número inteiro (diferente de zero): ")
+##    while num2 == 0:
+##        print("Erro: Não é possível dividir por zero.")
+##        num2 = pedir_numero("Insira novamente o segundo número (diferente de zero): ")
+##
+##    # Realizar a divisão inteira
+##    resultado = num1 // num2  # Usa divisão inteira para obter um número sem casas decimais
+##
+##    print(f"O resultado da divisão de {num1} por {num2} é {resultado}")
+##
+##    # Perguntar se deseja repetir ou sair
+##    repetir = input("\nDeseja realizar outra divisão? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        print("Programa encerrado.")
+##        break
+
+
+
+
+#Parte 3: Validação de dados e repetição
+# 10 - Lista de Elementos Personalizada
+##"""
+##Implemente um programa que crie
+##uma lista de elementos introduzidos pelo utilizador,
+##garantindo que: O utilizador escolha
+##quantos elementos deseja adicionar;
+##A lista aceite diferentes tipos de dados (números, texto, booleanos),
+##mas não permita entradas vazias.
+##Após a criação, a lista seja exibida. O utilizador possa repetir
+##o processo para criar uma nova lista ou terminar o programa.
+##"""
+
+
+
+
+# Resolução Parte 3 - 10 - Lista de Elementos Personalizada
+##def pedir_elemento():
+##    """Solicita um elemento ao utilizador e garante que não está vazio."""
+##    while True:
+##        elemento = input("Insira um elemento (pode ser número, texto ou 'True'/'False'): ").strip()
+##        if elemento:
+##            # Tenta converter para número inteiro (permitindo números negativos)
+##            if elemento.lstrip('-').isdigit():
+##                return int(elemento)
+##            # Tenta converter para número decimal
+##            try:
+##                return float(elemento)
+##            except ValueError:
+##                pass
+##            # Converte para booleano se for True ou False
+##            if elemento.lower() in ['true', 'false']:
+##                return elemento.lower() == 'true'
+##            # Caso contrário, mantém como string
+##            return elemento
+##        else:
+##            print("Erro: O elemento não pode estar vazio.")
+##
+##while True:
+##    lista = []  # Criar uma nova lista
+##    try:
+##        quantidade = int(input("Quantos elementos deseja adicionar à lista? "))
+##        if quantidade <= 0:
+##            print("Erro: Insira um número inteiro positivo.")
+##            continue
+##    except ValueError:
+##        print("Erro: Insira um número inteiro válido.")
+##        continue
+##
+##    for i in range(quantidade):
+##        lista.append(pedir_elemento())
+##
+##    # Exibir a lista completa
+##    print("\nLista criada:", lista)
+##
+##    # Perguntar se deseja repetir ou sair
+##    repetir = input("\nDeseja criar outra lista? (S/N): ").strip().lower()
+##    if repetir != 's':
+##        print("Programa encerrado.")
+##        break

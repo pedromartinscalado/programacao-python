@@ -1,0 +1,1 @@
+INSERT INTO meow(meow.mew,meow.meow) VALUES(1,'A')
